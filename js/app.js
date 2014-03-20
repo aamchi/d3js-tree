@@ -32,16 +32,17 @@ function searchNode() {
 
 function createTree(csvDataFile) {
   
-  margin = {top: 20, right: 20, bottom: 20, left: 120},
+  margin = {top: 20, right: 20, bottom: 20, left: 220},
      width = 1960 - margin.right - margin.left,
-     height = 500 - margin.top - margin.bottom;
+     height = 9500 - margin.top - margin.bottom;
      
   i = 0,
      duration = 750,
      root;
   
-  tree = d3.layout.tree()
-     .size([height, width]);
+  tree = d3.layout.tree().size([height, width]);
+
+  console.log("at create, height = " + height);
   
   diagonal = d3.svg.diagonal()
      .projection(function(d) { return [d.y, d.x]; });
@@ -85,15 +86,28 @@ function createTree(csvDataFile) {
       root.y0 = 0;
       update(root);
   });
-  
-  d3.select(self.frameElement).style("height", "500px");
 }
 
 function update(source) {
 
+  // Recompute the new height
+  var levelWidth = [1];
+  var childCount = function(level, n) {
+    if(n.children && n.children.length > 0) {
+      if(levelWidth.length <= level + 1) levelWidth.push(0);
+      levelWidth[level+1] += n.children.length;
+      n.children.forEach(function(d) {
+        childCount(level + 1, d);
+      });
+    }
+  };
+  childCount(0, root);  
+  var newHeight = d3.max(levelWidth) * 40; 
+  tree = d3.layout.tree().size([newHeight, width]);
+
   // Compute the new tree layout.
   var nodes = tree.nodes(root).reverse(),
-     links = tree.links(nodes);
+      links = tree.links(nodes);
 
   // Normalize for fixed-depth.
   nodes.forEach(function(d) { d.y = d.depth * 150; });
@@ -112,7 +126,7 @@ function update(source) {
            div_tt.transition()
               .duration(200)
               .style("opacity", .9);
-           div_tt	.html(d.tooltip)
+           div_tt.html(d.tooltip)
               .style("left", (d3.event.pageX) + "px")
               .style("top", (d3.event.pageY - 28) + "px");
         }
